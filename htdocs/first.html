@@ -12,26 +12,17 @@
 		<script>
 		    var clock = new THREE.Clock();
 			var scene = new THREE.Scene();
-			var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+			var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 50 );
 			camera.position.z = 5;
 
 			var renderer = new THREE.WebGLRenderer();
 			renderer.setSize( window.innerWidth, window.innerHeight );
 			document.body.appendChild( renderer.domElement );
 
-			//var material = new THREE.MeshBasicMaterial( { color: 0xffffff } );
-			//var material = new THREE.MeshLambertMaterial( { color: 0x00ff00, emissive: 0x888888, side: THREE.DoubleSide, depthTest: true, depthWrite: true, wireframe: false } );
-            var material = new THREE.MeshPhongMaterial( {
-					color: 0xaaaaaa, specular: 0xffffff, shininess: 250,
-					side: THREE.DoubleSide, vertexColors: THREE.VertexColors, wireframe: false
-			} );
-
-			/*
-			var geometry = new THREE.BoxGeometry( 1, 1, 1 );
-
-			var cube = new THREE.Mesh( geometry, material );
-			scene.add( cube );
-*/			
+			var material = new THREE.MeshLambertMaterial( { color: 0xffffff, emissive: 0x000000,
+				side: THREE.DoubleSide, depthTest: true, depthWrite: true, wireframe: false,
+				vertexColors: THREE.VertexColors } );
+            
 			var geom2 = new THREE.BufferGeometry();
 
 			var n = 101;
@@ -65,6 +56,10 @@
 			}
 
 			var idx = 0;
+			var vmin = Number.MAX_VALUE;
+			var vmax = Number.MIN_VALUE;
+			
+			
 			for (var i=0;i<n;++i) {
 
 				var x = -1 + 2* i/n;
@@ -74,19 +69,36 @@
 
 					var v = x*y +0.5*x;
 					//var v = x+y;
-					var c = colv(2.25*(v+2)-1);				  
 					positions[idx] = x;  
-					colors[idx] = c[0];
 					++idx;				  
 					positions[idx] = y;  
-					colors[idx] = c[1];
 					++idx;				  
 					positions[idx] = v;  
+					++idx;
+					
+					vmin = Math.min(vmin,v);
+					vmax = Math.max(vmax,v);
+		        }
+			}
+			idx = 0;				  
+			for (var i=0;i<n;++i) {
+
+				var x = -1 + 2* i/n;
+								  
+				for (var j=0;j<n;++j) {
+					
+					var v = positions[idx+2];
+					
+					var c = colv(5*(v-vmin)/(vmax-vmin));				  
+					colors[idx] = c[0];
+					++idx;				  
+					colors[idx] = c[1];
+					++idx;				  
 					colors[idx] = c[2];
 					++idx;
 		        }
 			}
-			idx = 0;						  
+			idx = 0;				  
 			var iidx = 0;
 			for (var i=0;i<n-1;++i) {
 
@@ -142,17 +154,35 @@ function buildAxes( length ) {
 
 										}
 			scene.add(buildAxes(1.5));
-										
+						
+			/*
+			var ambientLight = new THREE.AmbientLight( 0xffffff );
+			camera.add( ambientLight );
+
+			var lights = [];
+			lights[0] = new THREE.PointLight( 0xffffff, 1, 0 );
+			lights[1] = new THREE.PointLight( 0xffffff, 1, 0 );
+			lights[2] = new THREE.PointLight( 0xffffff, 1, 0 );
+			
+			lights[0].position.set( 0, 200, 0 );
+			lights[1].position.set( 100, 200, 100 );
+			lights[2].position.set( -100, -200, -100 );
+
+			camera.add( lights[0] );
+			camera.add( lights[1] );
+			camera.add( lights[2] );
+			*/
+
 			//var pointLight = new THREE.PointLight( 0xffffff );
 			//scene.add( pointLight );
 
 			var ambientLight = new THREE.AmbientLight( 0xffffff );
-			scene.add( ambientLight );
+			camera.add( ambientLight );
 
-			var directionalLight = new THREE.DirectionalLight( 0xffffff, 1.0 );
-			directionalLight.position.set( 10, 10, 0 );
+			//var directionalLight = new THREE.DirectionalLight( 0xffffff, 1.0 );
+			//directionalLight.position.set( 10, 10, 0 );
 
-			camera.add( directionalLight );
+			//camera.add( directionalLight );
 			scene.add(camera);
 
 			var cameraControls = new THREE.TrackballControls(camera, renderer.domElement);
