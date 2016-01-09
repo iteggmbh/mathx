@@ -25,7 +25,6 @@ class FormulaCanvas(Gtk.Misc):
         self.label_font = "Consolas"
         
         self.add_events(Gdk.EventMask.BUTTON1_MOTION_MASK)
-        #self.add_events(Gdk.EventMask.POINTER_MOTION_MASK)
         self.add_events(Gdk.EventMask.SCROLL_MASK)
         self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
         self.add_events(Gdk.EventMask.BUTTON_RELEASE_MASK)

@@ -14,8 +14,8 @@ class AstNode:
     def evaluate(self,variables={}):
         raise NotImplementedError()
     
-    def findVars(self,variables):
-        pass
+    def findVars(self,variables={}):
+        return variables
 
     def simplify(self):
         return self
