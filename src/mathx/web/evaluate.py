@@ -27,31 +27,38 @@ class valuesiter(list):
         self.n1 = self.n-1
         
         self.ast = formula.Parser(self.f).parseAst()
-        self.vvars = list(self.ast.findVars())
+        self.vvars = list(self.ast.findVars({}))
+        log.debug("vvars=%s"%self.vvars)
         assert len(self.vvars)==2
         self._i = 0
         self._j = 0
+        self._x = self.xmin
+
     def __next__(self):
-        if self._i<self.n:
-            x = self.xmin + self._i*(self.xmax-self.xmin)/self.n1
-            
-            if self._i<self.n:
-                y = self.ymin + self._j*(self.ymax-self.ymin)/self.n1
-                try:
-                    z = self.ast.evaluate({self.vvars[0]:x,self.vvars[1]:y})
-                except:
-                    z = None
-                
-                if isinstance(z, (int,float)) and (math.isnan(z.real) or math.isinf(z.real)):
-                    yield None
-                else:
-                    yield z
-                self._j += 1
-            else:
-                self._j = 0
-            self._i += 1
-        else:
+        
+        if self._i>=self.n:
             raise StopIteration()
+
+        y = self.ymin + self._j*(self.ymax-self.ymin)/self.n1
+
+        try:
+            z = self.ast.evaluate({self.vvars[0]:self._x,self.vvars[1]:y})
+        except:
+            z = None
+
+        self._j += 1
+
+        if self._j>=self.n:
+            self._i +=1
+            if self._i < self.n:
+                self._j = 0
+                self._x = self.xmin + self._i*(self.xmax-self.xmin)/self.n1
+
+        if isinstance(z, (int,float)) and (math.isnan(z.real) or math.isinf(z.real)):
+            return None
+        else:
+            return z
+
     def __iter__(self):
         return self
     def __len__(self):

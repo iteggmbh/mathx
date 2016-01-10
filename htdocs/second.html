@@ -1,6 +1,6 @@
 <html>
 	<head>
-		<title>My first Three.js app</title>
+		<title>Three.js Formula Visualization</title>
 		<style>
 			body { margin: 0; }
 			canvas { width: 100%; height: 100% }
@@ -169,29 +169,41 @@ function buildAxes( length ) {
 
 			    currentDeferred.then(function(res) {
 			        currentDeferred = null;
-					console.log("/mathx/evaluate returned", {
-			            f : res.f,
-			            xmin: res.xmin,
-			            xmax: res.xmax,
-			            ymin: res.ymin,
-			            ymax: res.ymax,
-						n : res.n,
-						vl : res.values.length
-					});
-					var geom2 = mathx.genSurfaceGeometry(res);
-
-					var mesh = new THREE.Mesh(geom2, material);
-					
-					if (currentMesh) {
+                    if (res) {
+			
+				     	console.log("/mathx/evaluate returned", {
+			                f : res.f,
+			                xmin: res.xmin,
+			                xmax: res.xmax,
+			                ymin: res.ymin,
+			                ymax: res.ymax,
+				    		n : res.n,
+				    		vl : res.values.length
+				    	});
+				    	var geom2 = mathx.genSurfaceGeometry(res);
+				    
+				    	var mesh = new THREE.Mesh(geom2, material);
+				    	
+				    	if (currentMesh) {
+				    		scene.remove(currentMesh);
+				    	}
+				    	
+				    	scene.add(mesh);
+			            currentMesh = mesh;
+			        }
+			        else if (currentMesh) {
+					    console.log("/mathx/evaluate returned null");
 						scene.remove(currentMesh);
+    					currentMesh = null;
 					}
-					
-					scene.add(mesh);
-					currentMesh = mesh;
 
 		    	}, function(err) {
 			        currentDeferred = null;
 					console.log("/mathx/evaluate failed:", err);
+					if (currentMesh) {
+						scene.remove(currentMesh);
+    					currentMesh = null;
+					}
 				});
 			};
 

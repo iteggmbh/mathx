@@ -14,7 +14,7 @@ var helpers = {
 			
 			if (key) {
 				
-				var value = kv.length>1 ? kv[1] : null;
+				var value = kv.length>1 ? decodeURIComponent(kv[1]) : null;
 				
 				ret[key] = value;
 			}
