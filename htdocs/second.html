@@ -13,16 +13,6 @@
 		<script src="js/controls/TrackballControls.js"></script>
 		<script>
 		   
-		    var state = { 		
-		    	xmin: -1,
-		    	xmax: 1,
-		    	ymin: -1,
-		    	ymax: 1,
-		    	n: 101,
-		    	f: "x*y+0.5*x"
-		    };
-		
-
 		    var clock = new THREE.Clock();
 			var scene = new THREE.Scene();
 			var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 50 );
@@ -126,15 +116,26 @@ function buildAxes( length ) {
 			animate();
 			
 			var currentMesh = null;
+			var currentDeferred = null;
 			
 			var loadData = function() {
+
+			    var state = { 		
+		    	    xmin: -1,
+		    	    xmax: 1,
+		    	    ymin: -1,
+		    	    ymax: 1,
+		    	    n: 101,
+		    	    f: "x*y+0.5*x"
+		        };
+		
 				if (location.hash) {
 
 					var qo = helpers.parseQuery(location.hash.substring(1));
 
 					console.log(qo);
 
-					for ( var k in state) {
+					for (var k in state) {
 
 						if (k in qo) {
 
@@ -152,15 +153,28 @@ function buildAxes( length ) {
 					}
 				}
 
-				console.log("state=", state);
+                if (currentDeferred) {
+  				    console.log("Canceling previous query to /mathx/evaluate...");
+			        currentDeferred.cancel();
+			        currentDeferred = null;
+			    }
+			
+				console.log("Querying /mathx/evaluate with state", state);
 
-				helpers.xhr({
+				currentDeferred = helpers.xhr({
 					url : "/mathx/evaluate",
 					jsonBody : state,
 					responseType : 'json'
-				}).then(function(res) {
-					console.log("res=", {
-						f : res.f,
+			    });
+
+			    currentDeferred.then(function(res) {
+			        currentDeferred = null;
+					console.log("/mathx/evaluate returned", {
+			            f : res.f,
+			            xmin: res.xmin,
+			            xmax: res.xmax,
+			            ymin: res.ymin,
+			            ymax: res.ymax,
 						n : res.n,
 						vl : res.values.length
 					});
@@ -174,9 +188,9 @@ function buildAxes( length ) {
 					
 					scene.add(mesh);
 					currentMesh = mesh;
-					console.log("meshId=", currentMesh.id);
 
-				}, function(err) {
+		    	}, function(err) {
+			        currentDeferred = null;
 					console.log("/mathx/evaluate failed:", err);
 				});
 			};
