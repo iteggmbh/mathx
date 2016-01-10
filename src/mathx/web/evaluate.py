@@ -57,8 +57,13 @@ def handler(env, start_response):
         value = state[key]
         assert isinstance(value, vtype)
         ret[key] = value
-    
-    values = valuesgen(state)
+
+    # validate the input, for sure.
+    n = state["n"]
+    if n < 2 or n > 201:
+        ret["n"] = 101
+
+    values = valuesgen(ret)
 
     ret["values"] = type("StreamArray",(list,),{"__iter__":lambda self:values,"__len__":lambda self: 1})()
     
