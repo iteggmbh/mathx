@@ -9,6 +9,7 @@
 	<body>
 		<script src="js/helpers.js"></script>
 		<script src="js/three.min.js"></script>
+		<script src="js/mathx.js"></script>
 		<script src="js/controls/TrackballControls.js"></script>
 		<script>
 		   
@@ -21,42 +22,7 @@
 		    	f: "x*y+0.5*x"
 		    };
 		
-			if (location.hash) {
-		
-		    	var qo = helpers.parseQuery(location.hash.substring(1));
-		    
-		    	console.log(qo);
-		    	
-		    	for (var k in state) {
-		    		
-		    		if (k in qo) {
-		    			
-		    			if (typeof state[k] == "number") {
-		    				try {
-		    					state[k] = Number(qo[k]);
-		    				}
-		    				catch(e) {
-		    					console.log("Option",k," as a non-numeric value.");
-		    				}
-		    			}
-		    			else {
-		    				state[k] = qo[k];
-		    			}
-		    		}	
-		    	}
-			}
-			
-			console.log("state=",state);
 
-			helpers.xhr({url:"/mathx/evaluate",jsonBody:state,responseType:'json'}).then(
-				function(res) {
-					console.log("res=",res);
-				},
-				function(err) {
-					console.log("/mathx/evaluate failed:",err);
-				}
-			);
-			
 		    var clock = new THREE.Clock();
 			var scene = new THREE.Scene();
 			var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 50 );
@@ -70,105 +36,6 @@
 				side: THREE.DoubleSide, depthTest: true, depthWrite: true, wireframe: false,
 				vertexColors: THREE.VertexColors } );
             
-			var geom2 = new THREE.BufferGeometry();
-
-			var n = 101;
-
-			//var indices = new Uint32Array([0,1,3, 3,1,4, 1,2,4, 4,2,5, 3,4,6, 6,4,7, 4,5,7, 7,5,8 ]);
-			var indices = new Uint32Array((n-1)*(n-1)*6);
-
-			var positions = new Float32Array(n*n*3);
-			var colors = new Float32Array(n*n*3);
-
-			var palette = [[0,0,1],[0,1,1],[0,1,0],[1,1,0],[1,0,0],[1,0,1]];
-			
-			var colv = function(v) {
-                
-		   	    var n = Math.floor(v);
-			    			
-                if (n < 0) {
-					n=0;
-					return palette[0];
-				}
-				else if (n >= palette.length-1) {
-			        return palette[palette.length-1];
-			    }
-			    else {
-			       var d1 = n+1 - v;
-		           var d2 = v - n;
-		           var c1 = palette[n];
-		           var c2 = palette[n+1];
-			       return [ c1[0]*d1+c2[0]*d2,c1[1]*d1+c2[1]*d2,c1[2]*d1+c2[2]*d2 ];
-			    }
-			}
-
-			var idx = 0;
-			var vmin = Number.MAX_VALUE;
-			var vmax = Number.MIN_VALUE;
-			
-			
-			for (var i=0;i<n;++i) {
-
-				var x = -1 + 2* i/n;
-								  
-				for (var j=0;j<n;++j) {
-					var y = -1 + 2* j/n;
-
-					var v = x*y +0.5*x;
-					//var v = x+y;
-					positions[idx] = x;  
-					++idx;				  
-					positions[idx] = y;  
-					++idx;				  
-					positions[idx] = v;  
-					++idx;
-					
-					vmin = Math.min(vmin,v);
-					vmax = Math.max(vmax,v);
-		        }
-			}
-			idx = 0;				  
-			for (var i=0;i<n;++i) {
-
-				var x = -1 + 2* i/n;
-								  
-				for (var j=0;j<n;++j) {
-					
-					var v = positions[idx+2];
-					
-					var c = colv(5*(v-vmin)/(vmax-vmin));				  
-					colors[idx] = c[0];
-					++idx;				  
-					colors[idx] = c[1];
-					++idx;				  
-					colors[idx] = c[2];
-					++idx;
-		        }
-			}
-			idx = 0;				  
-			var iidx = 0;
-			for (var i=0;i<n-1;++i) {
-
-				for (var j=0;j<n-1;++j) {
-									 
-					indices[iidx++] = idx;
-					indices[iidx++] = idx+1;
-					indices[iidx++] = idx+n;
-					indices[iidx++] = idx+n;
-					indices[iidx++] = idx+1;
-					indices[iidx++] = idx+n+1;
-					++idx;
-				}
-				++idx;						
-		    }
-								  
-			geom2.setIndex( new THREE.BufferAttribute( indices, 1 ) );
-			geom2.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
-			geom2.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
-
-			var mesh = new THREE.Mesh( geom2, material );
-			scene.add( mesh );
-
 			function buildAxis( src, dst, colorHex, dashed ) {
                 var geom = new THREE.Geometry(),
                 mat; 
@@ -257,6 +124,65 @@ function buildAxes( length ) {
 			window.addEventListener( 'resize', onWindowResize, false );
 
 			animate();
+			
+			var currentMesh = null;
+			
+			var loadData = function() {
+				if (location.hash) {
+
+					var qo = helpers.parseQuery(location.hash.substring(1));
+
+					console.log(qo);
+
+					for ( var k in state) {
+
+						if (k in qo) {
+
+							if (typeof state[k] == "number") {
+								try {
+									state[k] = Number(qo[k]);
+								} catch (e) {
+									console.log("Option", k,
+											" as a non-numeric value.");
+								}
+							} else {
+								state[k] = qo[k];
+							}
+						}
+					}
+				}
+
+				console.log("state=", state);
+
+				helpers.xhr({
+					url : "/mathx/evaluate",
+					jsonBody : state,
+					responseType : 'json'
+				}).then(function(res) {
+					console.log("res=", {
+						f : res.f,
+						n : res.n,
+						vl : res.values.length
+					});
+					var geom2 = mathx.genSurfaceGeometry(res);
+
+					var mesh = new THREE.Mesh(geom2, material);
+					
+					if (currentMesh) {
+						scene.remove(currentMesh);
+					}
+					
+					scene.add(mesh);
+					currentMesh = mesh;
+					console.log("meshId=", currentMesh.id);
+
+				}, function(err) {
+					console.log("/mathx/evaluate failed:", err);
+				});
+			};
+
+			window.addEventListener("hashchange",loadData, false);
+			loadData();
 		</script>
 	</body>
 </html>

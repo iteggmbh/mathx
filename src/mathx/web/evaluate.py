@@ -12,7 +12,9 @@ from mathx import formula
 
 log = logging.getLogger("mathx.evaluate")
 
-_cache = {}
+NUMBER_TYPES = (int,float)
+
+STATE_KEYS = {"n":int,"xmin":NUMBER_TYPES,"xmax":NUMBER_TYPES,"ymin":NUMBER_TYPES,"ymax":NUMBER_TYPES,"f":str}
 
 def valuesgen(state):
     f = state["f"]
@@ -38,7 +40,7 @@ def valuesgen(state):
             except:
                 z = None
             
-            if math.isnan(z.real) or math.isinf(z.real):
+            if isinstance(z, (int,float)) and (math.isnan(z.real) or math.isinf(z.real)):
                 yield None
             else:
                 yield z
@@ -49,14 +51,16 @@ def handler(env, start_response):
     reader = codecs.getreader("utf-8")
     state = json.load(reader(inp))
     
-    log.info("state=%r"%state)
+    ret = {}
     
-    if (state["f"], state["xmin"], state["xmax"], state["ymin"], state["ymax"], state["n"]) in _cache:
-        ret = {"n":state["n"],"values":type("StreamArray",(list,),{"__iter__":lambda self:_cache[(state["f"], state["xmin"], state["xmax"], state["ymin"], state["ymax"], state["n"])],"__len__":lambda self: 1})()}
-    else:
-        values = valuesgen(state)
-        _cache[(state["f"], state["xmin"], state["xmax"], state["ymin"], state["ymax"], state["n"])] = values
-        ret = {"n":state["n"],"values":type("StreamArray",(list,),{"__iter__":lambda self:values,"__len__":lambda self: 1})()}
+    for key,vtype in STATE_KEYS.items():
+        value = state[key]
+        assert isinstance(value, vtype)
+        ret[key] = value
+    
+    values = valuesgen(state)
+
+    ret["values"] = type("StreamArray",(list,),{"__iter__":lambda self:values,"__len__":lambda self: 1})()
     
     start_response('200 OK', [('Content-Type','application/json')])
     je = json.JSONEncoder()

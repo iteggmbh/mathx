@@ -24,10 +24,10 @@ var helpers = {
 		return ret;
 	},
 
-	Deferred: function() {
+	Deferred: function(cancelFunction) {
 		this.successHandlers = [];
 		this.failHandlers = [];
-
+		cancelFunction && (this.cancelFunction = cancelFunction);
 	},
 
 	xhr: function(args) {
@@ -35,9 +35,10 @@ var helpers = {
 		var url = args.url;
 		var method = args.method || ((args.body || args.jsonBody) ? 'POST' : 'GET');
 
-		var d = new helpers.Deferred();
 
 		var xmlhttp = new XMLHttpRequest();
+
+		var d = new helpers.Deferred(function(){xmlhttp.abort();});
 
 		xmlhttp.onreadystatechange=function() {
 			if (xmlhttp.readyState==4) {
@@ -92,4 +93,7 @@ helpers.Deferred.prototype.reject = function() {
 		this.failHandlers[i].apply(this,arguments);
 	}
 }
+helpers.Deferred.prototype.cancel = function() {
 
+	this.cancelFunction && this.cancelFunction();
+}
