@@ -6,7 +6,7 @@ var ecc = {
 
 	cube: function(x) { return x*x*x; },
 
-	cbrt: Math.cbrt || function(x) { return x < 0 ? -Math.pow(x,M_THIRD) : Math.pow(x,M_THIRD); },
+	cbrt: Math.cbrt || function(x) { return x < 0 ? -Math.pow(-x,M_THIRD) : Math.pow(x,M_THIRD); },
 
 	hypot: Math.hypot ||
 		function() { var l=0.0; for (var i=0;i<arguments.length;++i) l+=ecc.sqr(arguments[i]); return Math.sqrt(l);  },
@@ -40,7 +40,7 @@ var ecc = {
 	// solve x^3 + p x + q = 0
 	cardano: function(p,q) {
 
-		var delta = ecc.sqr(0.5*q)+ecc.cube(ecc.M_THIRD*a);
+		var delta = ecc.sqr(0.5*q)+ecc.cube(ecc.M_THIRD*p);
 
 		if (delta == 0) {
 
@@ -94,14 +94,12 @@ ecc.EllipticCurve.prototype.gradient = function(p) {
 // project point p onto curve with precision
 ecc.EllipticCurve.prototype.project = function(p,precision) {
 
-	for (var i=0;i<10;++i) {
-
-		ecc.normalize(p);
+	for (var i=0;i<20;++i) {
 
 		var d = this.distance(p);
 
 		if (Math.abs(d) < precision) {
-			return p;
+			return ecc.normalize(p);
 		}
 
 		var dd = this.gradient(p);
@@ -110,48 +108,96 @@ ecc.EllipticCurve.prototype.project = function(p,precision) {
 
 		ecc.multadd(p,-d/(dd[0]*dd[0]+dd[1]*dd[1]+dd[2]*dd[2]),dd);
 	}
-	console.log("Warning cannot project point",p,"to elliptic curve in 10 iterations.");
-	return p;
+	console.log("Warning cannot project point",p,"to elliptic curve in 20 iterations.");
+	return ecc.normalize(p);
 };
+
+// make a vertices array of a branch with the given delta
+// return true, if we ran into infinity or false, if we came back over y=0
+ecc.EllipticCurve.prototype._makeBranchVertices = function(vertices,p0,delta) {
+
+	// fast clone
+	var p=p0.slice();
+	
+	var ylast = null;
+		
+	for (var i=0;i<1000;++i) {
+        
+		// normal vector to curve X^3 + a X Z^2 + b Z^3 - Z*Y^2 = 0
+		var grad = this.gradient(p); 
+		
+		// cross product
+		var dd = ecc.cross(p,grad);
+		
+ 		fac = delta / ecc.length3(dd);
+		ecc.multadd(p,fac,dd);
+		
+		if (p[2] < 0) {
+			return true;
+		}
+		
+		if (p[2] < 0 || (ylast != null && ylast*p[1] <= 0)) {
+			return false;
+		}
+
+		this.project(p,1.0e-8);
+		
+		vertices.push(
+            new THREE.Vector3(p[0],p[1],p[2])
+		);
+		
+		ylast = p[1];
+	}
+	return true;
+}
 
 ecc.EllipticCurve.prototype.makeGeometries = function() {
 
 	var xx=ecc.cardano(this.a,this.b);
 	var ret = [];
+	var step = 0.01;
+
+	var mergeCandidate = null;
+
 	
 	for (var i=0;i<xx.length;++i) {
 		
         var geom = new THREE.Geometry();
 
 		var p = [xx[i],0,1];
-		ecc.normalize(p);
-		var ylast = null;
 		
-		for (var i=0;i<1000;++i) {
-                
-			// normal vector to curve X^3 + a X Z^2 + b Z^3 - Z*Y^2 = 0
-			var grad = this.gradient(p); 
-			
-			// cross product
-			var dd = ecc.cross(p,grad);
-			
- 			fac = 0.01 / ecc.length3(dd);
-			ecc.multadd(p,fac,dd);
+		ecc.normalize(p);
 
-			if (p[2] < 0 || (ylast != null && ylast*p[1] <= 0)) {
-				break;
-			}
+		console.log("xx[",i,"]=",xx[i],",d=",this.distance(p),",dd=",this.gradient(p));
 
-			this.project(p,1.0e-8);
-			
-     		geom.vertices.push(
-                new THREE.Vector3(p[0],p[1],p[2])
-			);
+		geom.vertices.push(
+            new THREE.Vector3(p[0],p[1],p[2])
+		);
 
-			ylast = p[1];
+		if (this._makeBranchVertices(geom.vertices,p,step)) {
+
+			geom.vertices.reverse();
+			this._makeBranchVertices(geom.vertices,p,-step);
 			ret.push(geom);
+		}
+		else if (mergeCandidate) {
+
+			Array.prototype.push.apply(mergeCandidate.vertices,geom.vertices);
+			// visually close the loop
+			mergeCandidate.vertices.push(mergeCandidate.vertices[0]);
+			
+			ret.push(mergeCandidate);
+			mergeCandidate = null;
+		}
+		else {
+			mergeCandidate = geom;
 		}
 	}
 
+	if (mergeCandidate) {
+		console.log("Found a half-loop merge candidate with no counterpart");
+		ret.push(mergeCandidate);
+	}
+	
 	return ret;
 };
