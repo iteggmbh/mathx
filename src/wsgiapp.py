@@ -3,7 +3,7 @@ from mathx.web import evaluate
 import logging
 import os
 
-handler = logging.StreamHandler(open('/dev/stderr', 'w'))
+handler = logging.StreamHandler()
 formatter = logging.Formatter( '%(asctime)s %(levelname)s %(message)s') 
 handler.setFormatter(formatter)
         
