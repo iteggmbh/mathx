@@ -1,0 +1,165 @@
+<html>
+	<head>
+		<title>Elliptic Curve Cryptography Visualization</title>
+		<style>
+			body { margin: 0; }
+			canvas { width: 100%; height: 100% }
+		</style>
+	</head>
+	<body>
+		<script src="js/three.min.js"></script>
+		<script src="js/controls/TrackballControls.js"></script>
+		<script src="js/ecc.js"></script>
+		<script>
+		    var clock = new THREE.Clock();
+			var scene = new THREE.Scene();
+			var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 50 );
+			camera.position.z = 5;
+
+			var renderer = new THREE.WebGLRenderer();
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			document.body.appendChild( renderer.domElement );
+
+ 			var material = new THREE.MeshLambertMaterial( { color: 0x00ffff, emissive: 0x000000,
+			side: THREE.FrontSide, depthTest: true, depthWrite: true, wireframe: false,
+			transparent: true, opacity: 0.7} );
+            
+ 			var material2 = new THREE.MeshLambertMaterial( { color: 0x00ffff, emissive: 0x000000,
+			side: THREE.BackSide, depthTest: true, depthWrite: true, wireframe: false,
+			transparent: true, opacity: 0.7} );
+
+ 			var material3 = new THREE.LineBasicMaterial({
+			    color: 0xff0000, linewidth:3
+            });
+
+            var vertices = [0,0,1];
+            var indices = [];
+			
+			var z = Math.sqrt(0.5);
+			var r = Math.sqrt(0.5);
+			for (var i=0;i<5;++i) {
+			   var alpha = Math.PI * 0.4 * i;
+
+			  vertices.push(Math.cos(alpha)*r);
+			  vertices.push(Math.sin(alpha)*r);
+			  vertices.push(z);
+			  indices.push(0);					  
+			  indices.push(1+i);					  
+			  indices.push(1+(i+1)%5);					  
+			}
+								  
+			for (var i=0;i<10;++i) {
+			   var alpha = Math.PI * 0.2 * i;
+
+			  vertices.push(Math.cos(alpha));
+			  vertices.push(Math.sin(alpha));
+			  vertices.push(0.0);
+			  if (i & 1) {
+			      indices.push(6+i);
+			      indices.push(1+((i+1)%10)/2);
+			      indices.push(1+(i-1)/2);
+			  }
+			  else {
+			      indices.push(1+i/2);
+			      indices.push(6+i);
+			      indices.push(6+(i+1)%10);
+			      indices.push(1+i/2);
+			      indices.push(6+(i+9)%10);
+			      indices.push(6+i%10);
+			  }
+			}
+
+            var geom2 = new THREE.PolyhedronGeometry( vertices, indices, 1, 4);
+			var mesh = new THREE.Mesh( geom2, material );
+
+			
+			scene.add( mesh );
+
+            var circleGeometry = new THREE.CircleGeometry( 1, 160);
+            var circle = new THREE.Mesh( circleGeometry, material2 );
+            scene.add( circle );
+		    var a = -1;
+			var b = 1;					   
+
+            var ec = new ecc.EllipticCurve(a,b);
+			var lgeoms = ec.makeGeometries();
+
+			for (var i=0;i<lgeoms.length;++i) {
+                var line = new THREE.Line(lgeoms[i], material3 );
+                scene.add( line );
+			}
+									
+			function buildAxis( src, dst, colorHex, dashed ) {
+                var geom = new THREE.Geometry(),
+                mat; 
+
+                if(dashed) {
+                    mat = new THREE.LineDashedMaterial({ linewidth: 1, color: colorHex, dashSize: 0.04, gapSize: 0.01 });
+                } else {
+                    mat = new THREE.LineBasicMaterial({ linewidth: 1, color: colorHex });
+                }
+
+                geom.vertices.push( src.clone() );
+                geom.vertices.push( dst.clone() );
+                geom.computeLineDistances(); // This one is SUPER important, otherwise dashed lines will appear as simple plain lines
+
+                var axis = new THREE.Line( geom, mat, THREE.LinePieces );
+
+                return axis;
+            }
+function buildAxes( length ) {
+        var axes = new THREE.Object3D();
+
+        axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( length, 0, 0 ), 0xFF0000, false ) ); // +X
+        axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( -length, 0, 0 ), 0xFF0000, true) ); // -X
+        axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, length, 0 ), 0x00FF00, false ) ); // +Y
+        axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, -length, 0 ), 0x00FF00, true ) ); // -Y
+        axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, 0, length ), 0x0000FF, false ) ); // +Z
+        axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, 0, -length ), 0x0000FF, true ) ); // -Z
+
+        return axes;
+
+										}
+			scene.add(buildAxes(1.5));
+						
+			var pointLight = new THREE.PointLight(0xffffff);
+			pointLight.position.set( 50, 50, 100 );
+			camera.add( pointLight );
+
+			var ambientLight = new THREE.AmbientLight(0x444444);
+			camera.add( ambientLight );
+
+			//var directionalLight = new THREE.DirectionalLight( 0xffffff, 1.0 );
+			//directionalLight.position.set( 10, 10, 0 );
+
+			//camera.add( directionalLight );
+			scene.add(camera);
+
+			var cameraControls = new THREE.TrackballControls(camera, renderer.domElement);
+			cameraControls.target.set(0, 0, 0);
+			
+			function animate() {
+ 
+			var delta = clock.getDelta();
+			
+			requestAnimationFrame(animate);
+			
+			cameraControls.update(delta);
+			
+			renderer.render(scene, camera);
+			}
+
+			function onWindowResize(){
+
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+			
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+			
+			window.addEventListener( 'resize', onWindowResize, false );
+
+			animate();
+		</script>
+	</body>
+</html>
