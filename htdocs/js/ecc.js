@@ -86,7 +86,7 @@ ecc.EllipticCurve.prototype.distance = function(p) {
 // derivation of distance, gradient.
 ecc.EllipticCurve.prototype.gradient = function(p) {
 	
-	return [2*ecc.sqr(p[0]) + this.a*ecc.sqr(p[2]),
+	return [3*ecc.sqr(p[0]) + this.a*ecc.sqr(p[2]),
 			-2*p[1]*p[2],
 			2*this.a*p[0]*p[2]+3*this.b*ecc.sqr(p[2])-ecc.sqr(p[1])];
 };
