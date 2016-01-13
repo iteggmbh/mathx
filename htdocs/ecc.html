@@ -10,6 +10,7 @@
 		<script src="js/three.min.js"></script>
 		<script src="js/controls/TrackballControls.js"></script>
 		<script src="js/ecc.js"></script>
+		<script src="js/geomlib.js"></script>
 		<script src="js/helpers.js"></script>
 		<script>
 		    var clock = new THREE.Clock();
@@ -36,47 +37,20 @@
 
 			// marker material.
  			var material4 = new THREE.PointsMaterial({
-			    color: 0x00ff00, size:3, sizeAttenuation: false
+			    color: 0x00ff00, size:5, sizeAttenuation: false
             });
 
-            var vertices = [0,0,1];
-            var indices = [];
-			
-			var z = Math.sqrt(0.5);
-			var r = Math.sqrt(0.5);
-			for (var i=0;i<5;++i) {
-			   var alpha = Math.PI * 0.4 * i;
+			// greater circle material.
+ 			var material5 = new THREE.LineBasicMaterial({
+			    color: 0x00cc00, linewidth:2
+            });
 
-			  vertices.push(Math.cos(alpha)*r);
-			  vertices.push(Math.sin(alpha)*r);
-			  vertices.push(z);
-			  indices.push(0);					  
-			  indices.push(1+i);					  
-			  indices.push(1+(i+1)%5);					  
-			}
-								  
-			for (var i=0;i<10;++i) {
-			   var alpha = Math.PI * 0.2 * i;
+			// half-plane material
+ 			var material6 = new THREE.MeshLambertMaterial( { color: 0x00ff00, emissive: 0x000000,
+			side: THREE.DoubleSide, depthTest: true, depthWrite: true, wireframe: false,
+			transparent: true, opacity: 0.7} );
 
-			  vertices.push(Math.cos(alpha));
-			  vertices.push(Math.sin(alpha));
-			  vertices.push(0.0);
-			  if (i & 1) {
-			      indices.push(6+i);
-			      indices.push(1+((i+1)%10)/2);
-			      indices.push(1+(i-1)/2);
-			  }
-			  else {
-			      indices.push(1+i/2);
-			      indices.push(6+i);
-			      indices.push(6+(i+1)%10);
-			      indices.push(1+i/2);
-			      indices.push(6+(i+9)%10);
-			      indices.push(6+i%10);
-			  }
-			}
-
-            var geom2 = new THREE.PolyhedronGeometry( vertices, indices, 1, 4);
+            var geom2 = new geomlib.buildSemiSphere(1.0);
 			var mesh = new THREE.Mesh( geom2, material );
 
 			
@@ -86,38 +60,7 @@
             var circle = new THREE.Mesh( circleGeometry, material2 );
             scene.add( circle );
 
-			function buildAxis( src, dst, colorHex, dashed ) {
-                var geom = new THREE.Geometry(),
-                mat; 
-
-                if(dashed) {
-                    mat = new THREE.LineDashedMaterial({ linewidth: 1, color: colorHex, dashSize: 0.04, gapSize: 0.01 });
-                } else {
-                    mat = new THREE.LineBasicMaterial({ linewidth: 1, color: colorHex });
-                }
-
-                geom.vertices.push( src.clone() );
-                geom.vertices.push( dst.clone() );
-                geom.computeLineDistances(); // This one is SUPER important, otherwise dashed lines will appear as simple plain lines
-
-                var axis = new THREE.Line( geom, mat, THREE.LinePieces );
-
-                return axis;
-            }
-function buildAxes( length ) {
-        var axes = new THREE.Object3D();
-
-        axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( length, 0, 0 ), 0xFF0000, false ) ); // +X
-        axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( -length, 0, 0 ), 0xFF0000, true) ); // -X
-        axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, length, 0 ), 0x00FF00, false ) ); // +Y
-        axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, -length, 0 ), 0x00FF00, true ) ); // -Y
-        axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, 0, length ), 0x0000FF, false ) ); // +Z
-        axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, 0, -length ), 0x0000FF, true ) ); // -Z
-
-        return axes;
-
-										}
-			scene.add(buildAxes(1.5));
+			scene.add(geomlib.buildAxes(1.5));
 						
 			var pointLight = new THREE.PointLight(0xffffff);
 			pointLight.position.set( 50, 50, 100 );
@@ -200,78 +143,131 @@ function buildAxes( length ) {
 		    var modifier = navigator.userAgent.indexOf('Mac OS X') >= 0 ? "metaKey" : "ctrlKey";
 			var raycaster = new THREE.Raycaster();
 								   
-			renderer.domElement.addEventListener("click",function(e) {
-                if (e[modifier]) {
-					console.log("Ctrl-Click at ",e.clientX,e.clientY);
+			function selectPoint(e) {
 
-					var mouse = new THREE.Vector2(
-								   ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1,
-				                   1 - ( event.clientY / renderer.domElement.clientHeight ) * 2 );
-
-				    raycaster.setFromCamera( mouse, camera );
-								   
-					console.log("raycaster=",raycaster.ray.origin,raycaster.ray.direction);
-
-					var d = raycaster.ray.origin.dot(raycaster.ray.direction);
-					var np = raycaster.ray.origin.clone();
-					np.addScaledVector(raycaster.ray.direction,-d);  
-
-					var dist = np.length();
-
-    				console.log("d=",d,"np=",np,"dist=",dist);
-
-					if (dist < 1.01) {
-						var p;
-						if (dist >= 1.0) {
-						    p=np;		   
-						}
-						else {		   
-     					    var dd = Math.sqrt(1.0-dist*dist);
-							var p1 = np.clone();
-        					p1.addScaledVector(raycaster.ray.direction,dd);  
-							var p2 = np.clone();
-        					p2.addScaledVector(raycaster.ray.direction,-dd);  
-
-							p = p2.z >= 0 ? p2:p1;
-						}
-								 
-    					console.log("p=",p);
-
-						if (ec != null) {
-						 	var mg = new THREE.Geometry();
-
-                            var tol = 1.0e-8;
-                            var pp = [p.x,p.y,p.z];
-							ec.project(pp,tol);
-							var dec = ec.distance(pp);
-
-		                    if (pp[2] >= 0 && Math.abs(dec) < tol) {
-
-								p.x = pp[0];
-								p.y = pp[1];
-								p.z = pp[2];
-												
-							    mg.vertices.push(p);
-							    var mm = new THREE.Points(mg,material4);
-							    
-             				    if (markers && markers.length > 1) {
-			            	    	THREE.Scene.prototype.remove.apply(scene,markers);
-					                markers = null;
-				                }				   
-							    	  
-							    if (markers == null) {
-							    	  markers = [];
-							    }
-							    scene.add(mm);
-							    markers.push(mm);
-							}
-						}
+				var mouse = new THREE.Vector2(
+					( e.x / renderer.domElement.clientWidth ) * 2 - 1,
+				    1 - ( e.y / renderer.domElement.clientHeight ) * 2 );
+				
+				raycaster.setFromCamera( mouse, camera );
+				
+				console.log("raycaster=",raycaster.ray.origin,raycaster.ray.direction);
+				
+				var d = raycaster.ray.origin.dot(raycaster.ray.direction);
+				var np = raycaster.ray.origin.clone();
+				np.addScaledVector(raycaster.ray.direction,-d);  
+				
+				var dist = np.length();
+				
+    			console.log("d=",d,"np=",np,"dist=",dist);
+				
+				if (dist < 1.01) {
+					var p;
+					if (dist >= 1.0) {
+						p=np;		   
+					}
+					else {		   
+     					var dd = Math.sqrt(1.0-dist*dist);
+						var p1 = np.clone();
+        				p1.addScaledVector(raycaster.ray.direction,dd);  
+						var p2 = np.clone();
+        				p2.addScaledVector(raycaster.ray.direction,-dd);  
+						
+						p = p2.z >= 0 ? p2:p1;
 					}
 					
+    				console.log("p=",p);
+					
+					if (ec != null) {
+						var mg = new THREE.Geometry();
+						
+                        var tol = 1.0e-8;
+                        var pp = [p.x,p.y,p.z];
+						ec.project(pp,tol);
+						var dec = ec.distance(pp);
+						
+		                if (pp[2] >= 0 && Math.abs(dec) < tol) {
+							
+							p.x = pp[0];
+							p.y = pp[1];
+							p.z = pp[2];
+							
+							mg.vertices.push(p);
+							var mm = new THREE.Points(mg,material4);
+							
+             				if (markers && markers.length > 1) {
+			            	    THREE.Scene.prototype.remove.apply(scene,markers);
+					            markers = null;
+				            }				   
+							
+							if (markers == null) {
+							    markers = [];
+				            }
+							
+				            if (markers.length == 1) {
+                                var gg = geomlib.buildGreaterCircle(p,markers[0].geometry.vertices[0],0.01);
+ 				                var gl = new THREE.Line(gg, material5);
+     							scene.add(gl);
+	    		                markers.push(gl);
+								
+                     			var cg = geomlib.buildCenterPlane(p,markers[0].geometry.vertices[0],1.2);
+							    var cmesh = new THREE.Mesh(cg, material6);
+				                scene.add(cmesh);
+				                markers.push(cmesh);
+				            }
+							
+							scene.add(mm);
+							markers.push(mm);
+						}
+					}
+				}
+			};					   
+
+
+            renderer.domElement.addEventListener("click",function(e) {
+                if (e[modifier]) {
+					console.log("Ctrl-Click at ",e.x,e.y);
+					selectPoint({x:e.clientX,y:e.clientY});
+				
 				    e.preventDefault();
 				    e.stopPropagation();
 				}
-			},false);					   
+			},false);
+
+            // trigger point selection on long, in-place touch (> 500ms, don't move more than 10 pixels)
+            var touchPos = null;
+				
+            renderer.domElement.addEventListener("touchstart",function(event){
+				if (event.touches.length == 1 && !event[modifier]) {
+					var touch = event.touches[0];
+					touchPos = { t: new Date(), x:touch.clientX,y:touch.clientY};
+					console.log("Touch start at ",touchPos);
+				}
+			},false);
+			renderer.domElement.addEventListener("touchmove",function(event){
+				if (event.touches.length == 1 && touchPos) {
+					var touch = event.touches[0];
+
+					if (ecc.hypot(touchPos.x-touch.clientX,touchPos.y-touch.clientY) > 10) {
+					    touchPos = null;
+				    }
+				}
+				else {
+					touchPos = null;
+				}
+			},false);
+			renderer.domElement.addEventListener("touchend",function(event){
+				if (touchPos && event.touches.length == 0) {
+
+					var d = new Date();
+					
+					if (d.getTime() - touchPos.t.getTime() > 500) {
+						console.log("Touch end at ",touchPos);
+						selectPoint(touchPos);
+					}
+					touchPos = null;
+				}
+			},false);
 		</script>
 	</body>
 </html>
