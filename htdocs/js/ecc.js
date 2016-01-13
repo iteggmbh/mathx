@@ -112,6 +112,23 @@ ecc.EllipticCurve.prototype.project = function(p,precision) {
 	return ecc.normalize(p);
 };
 
+// add p and q
+ecc.EllipticCurve.prototype.add = function(p,q) {
+
+	var uvw = ecc.cross(p,q);
+
+	var s = uvw[0]/uvw[1];
+
+	var x1 = p[0]/p[2];
+	var x2 = q[0]/q[2];
+
+	var x3 = ecc.sqr(s) - x1 - x2;
+
+	var ret = [x3,(uvw[2]+uvw[0]*x3)/uvw[1],1];
+
+	return ecc.normalize(ret);
+}
+
 // make a vertices array of a branch with the given delta
 // return true, if we ran into infinity or false, if we came back over y=0
 ecc.EllipticCurve.prototype._makeBranchVertices = function(vertices,p0,delta) {

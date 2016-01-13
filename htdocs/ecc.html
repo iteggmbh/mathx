@@ -179,7 +179,6 @@
     				console.log("p=",p);
 					
 					if (ec != null) {
-						var mg = new THREE.Geometry();
 						
                         var tol = 1.0e-8;
                         var pp = [p.x,p.y,p.z];
@@ -192,6 +191,7 @@
 							p.y = pp[1];
 							p.z = pp[2];
 							
+							var mg = new THREE.Geometry();
 							mg.vertices.push(p);
 							var mm = new THREE.Points(mg,material4);
 							
@@ -214,6 +214,22 @@
 							    var cmesh = new THREE.Mesh(cg, material6);
 				                scene.add(cmesh);
 				                markers.push(cmesh);
+
+								var p0 = markers[0].geometry.vertices[0];
+								var pq = ec.add([p0.x,p0.y,p0.z],pp);
+
+								var pqg = new THREE.Geometry();
+								pqg.vertices.push(new THREE.Vector3(pq[0],pq[1],pq[2]));
+								pqg.vertices.push(new THREE.Vector3(pq[0],-pq[1],pq[2]));
+								var pqm = new THREE.Points(pqg,material4);
+
+								scene.add(pqm);
+				                markers.push(pqm);
+
+                                var gg2 = geomlib.buildGreaterCircle(pqg.vertices[0],pqg.vertices[1],0.01);
+ 				                var gl2 = new THREE.Line(gg2, material5);
+     							scene.add(gl2);
+	    		                markers.push(gl2);
 				            }
 							
 							scene.add(mm);
