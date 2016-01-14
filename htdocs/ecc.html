@@ -294,6 +294,8 @@
 					var d = new Date();
 					
 					if (d.getTime() - touchPos.t.getTime() > 500) {
+
+						touchPos.doubleSelect = d.getTime() - touchPos.t.getTime() > 1000;
 						console.log("Touch end at ",touchPos);
 						selectPoint(touchPos);
 					}
