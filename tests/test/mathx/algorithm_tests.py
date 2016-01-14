@@ -7,7 +7,7 @@ Created on 19.10.2015
 import logging
 import unittest
 
-from mathematik.algorithms import findRootSecant
+from mathx.algorithms import findRootSecant
 import math
 
 
