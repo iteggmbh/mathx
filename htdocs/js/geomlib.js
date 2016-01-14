@@ -81,6 +81,10 @@ var geomlib = {
 		var norm = new THREE.Vector3();
 		norm.crossVectors(p,q);
 
+		if (Math.abs(norm.length()) < 1.0e-8) {
+			return null;
+		}
+		
 		var angle = Math.atan2(norm.length(),p.dot(q));
 
 		norm.normalize();
@@ -100,12 +104,7 @@ var geomlib = {
 		return geom;
 	},
 
-	buildCenterPlane: function(p,q,len) {
-
-		var norm = new THREE.Vector3();
-		norm.crossVectors(p,q);
-
-		var angle = Math.atan2(norm.length(),p.dot(q));
+	buildCenterPlane: function(norm,len) {
 
 		norm.normalize();
 		

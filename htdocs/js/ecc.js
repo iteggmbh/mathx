@@ -115,18 +115,92 @@ ecc.EllipticCurve.prototype.project = function(p,precision) {
 // add p and q
 ecc.EllipticCurve.prototype.add = function(p,q) {
 
-	var uvw = ecc.cross(p,q);
+	var uvw;
 
-	var s = uvw[0]/uvw[1];
+	if (p[0] == q[0] && p[1] == q[1] && p[2] == q[2]) {
+		// square operation -> normal vector is gradient.
+		uvw = this.gradient(p);
+	}
+	else {
+		// normal vector from two points.
+		uvw = ecc.cross(p,q);
+	}
 
-	var x1 = p[0]/p[2];
-	var x2 = q[0]/q[2];
+	console.log("uvw=",uvw);
 
-	var x3 = ecc.sqr(s) - x1 - x2;
+	// method 1, calculate with (x,y,1)
+	if (Math.abs(uvw[1])>0.1) {
+		var s = uvw[0]/uvw[1];
+		var v1 = uvw[2]/uvw[1];
+		
+		var x1 = p[0]/p[2];
+		var x2 = q[0]/q[2];
+		
+		var x3 = ecc.sqr(s) - x1 - x2;
+		
+		var ret1 = [x3,(uvw[2]+uvw[0]*x3)/uvw[1],1];
+		
+		var self = this;
+		
+		var check = function(x) {
+			return ecc.cube(x) - ecc.sqr(s)*ecc.sqr(x)+(self.a-2*s*v1)*x+self.b-(ecc.sqr(v1));
+		};
+		
+		console.log("check(x1)=",check(x1),"check(x2)=",check(x2),"check(x3)=",check(x3));
+		console.log("norm(ret1)=",ecc.normalize(ret1));
+		return {p:ret1,n:uvw};
+	}
+	
+	// method2, calculate with (x,1,z)
+	else {
+		var s = uvw[2]/uvw[0];
+		var u1 = uvw[1]/uvw[0];
+		
+		var z1 = p[2]/p[1];
+		var z2 = q[2]/q[1];
+		
+		var z3 = (3 * ecc.sqr(s) + this.a)*u1/(this.b-ecc.cube(s)-this.a*s) - z1 - z2;
 
-	var ret = [x3,(uvw[2]+uvw[0]*x3)/uvw[1],1];
+		var ret2 = z3 < 0 ? [(uvw[1]+uvw[2]*z3)/uvw[0],1,-z3] : [-(uvw[1]+uvw[2]*z3)/uvw[0],-1,z3];
+		
+		var self = this;
 
-	return ecc.normalize(ret);
+		var check = function(z) {
+			return (ecc.cube(s)+self.a*s-self.b)*ecc.cube(z) + (3*ecc.sqr(s)+self.a)*u1*ecc.sqr(z)+(1+3*ecc.sqr(u1)*s)*z+ecc.cube(u1);
+		};
+		console.log("check(z1)=",check(z1),"check(z2)=",check(z2),"check(z3)=",check(z3));
+		
+		console.log("norm(ret2)=",ecc.normalize(ret2));
+		return {p:ret2,n:uvw};
+	}
+
+	// method3, calculate with (1,y,z)
+	/*
+	  This method is not used, because no gain was observed, even in extreme corner cases.
+	{
+		var s = uvw[2]/uvw[1];
+		var v1 = uvw[0]/uvw[1];
+		
+		var z1 = p[2]/p[0];
+		var z2 = q[2]/q[0];
+		
+		var z3 = (2*s*v1-this.a)/(this.b-ecc.sqr(s)) - z1 - z2;
+		
+		var self = this;
+
+		var check = function(z) {
+			return (ecc.sqr(s)-self.b)*ecc.cube(z) + (2*s*v1-self.a)*ecc.sqr(z)+z*ecc.sqr(v1)-1;
+		};
+		
+		console.log("check(z1)=",check(z1),"check(z2)=",check(z2),"check(z3)=",check(z3));
+
+		var ret3 = z3<0 ? [-1,-(uvw[0]+uvw[2]*z3)/uvw[1],-z3] : [1,(uvw[0]+uvw[2]*z3)/uvw[1],z3];
+		console.log("norm(ret3)=",ecc.normalize(ret3));
+
+		return {p:ret3,n:uvw};
+	}
+	*/
+	
 }
 
 // make a vertices array of a branch with the given delta
@@ -150,6 +224,10 @@ ecc.EllipticCurve.prototype._makeBranchVertices = function(vertices,p0,delta) {
 		ecc.multadd(p,fac,dd);
 		
 		if (p[2] < 0) {
+			vertices.push(
+				new THREE.Vector3(0,Math.sign(p[1]),0)
+			);
+			
 			return true;
 		}
 		

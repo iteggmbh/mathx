@@ -143,7 +143,7 @@
 		    var modifier = navigator.userAgent.indexOf('Mac OS X') >= 0 ? "metaKey" : "ctrlKey";
 			var raycaster = new THREE.Raycaster();
 								   
-			function selectPoint(e) {
+            function selectPoint(e) {
 
 				var mouse = new THREE.Vector2(
 					( e.x / renderer.domElement.clientWidth ) * 2 - 1,
@@ -180,16 +180,24 @@
 					
 					if (ec != null) {
 						
-                        var tol = 1.0e-8;
+                        var tol = 1.0e-14;
                         var pp = [p.x,p.y,p.z];
 						ec.project(pp,tol);
 						var dec = ec.distance(pp);
 						
-		                if (pp[2] >= 0 && Math.abs(dec) < tol) {
-							
-							p.x = pp[0];
-							p.y = pp[1];
-							p.z = pp[2];
+		                if (pp[2] >= -0.01 && Math.abs(dec) < tol) {
+
+							if (pp[2] <= 0) {
+								// select neutral element
+								p.x = 0;
+								p.y = Math.sign(pp[1]);
+								p.z = 0;
+							}
+							else {
+								p.x = pp[0];
+								p.y = pp[1];
+								p.z = pp[2];
+							}
 							
 							var mg = new THREE.Geometry();
 							mg.vertices.push(p);
@@ -204,36 +212,44 @@
 							    markers = [];
 				            }
 							
-				            if (markers.length == 1) {
-                                var gg = geomlib.buildGreaterCircle(p,markers[0].geometry.vertices[0],0.01);
- 				                var gl = new THREE.Line(gg, material5);
-     							scene.add(gl);
-	    		                markers.push(gl);
-								
-                     			var cg = geomlib.buildCenterPlane(p,markers[0].geometry.vertices[0],1.2);
-							    var cmesh = new THREE.Mesh(cg, material6);
-				                scene.add(cmesh);
-				                markers.push(cmesh);
+							scene.add(mm);
+							markers.push(mm);
 
+							// second point added or Ctrl-Shift clicked
+				            if (markers.length == 2 || e.doubleSelect) {
+                                var gg = geomlib.buildGreaterCircle(p,markers[0].geometry.vertices[0],0.01);
+
+								if (gg != null) { 
+ 									var gl = new THREE.Line(gg, material5);
+     								scene.add(gl);
+	    							markers.push(gl);
+								}
+									
 								var p0 = markers[0].geometry.vertices[0];
 								var pq = ec.add([p0.x,p0.y,p0.z],pp);
 
 								var pqg = new THREE.Geometry();
-								pqg.vertices.push(new THREE.Vector3(pq[0],pq[1],pq[2]));
-								pqg.vertices.push(new THREE.Vector3(pq[0],-pq[1],pq[2]));
+								pqg.vertices.push(new THREE.Vector3(pq.p[0],pq.p[1],pq.p[2]));
+								pqg.vertices.push(new THREE.Vector3(pq.p[0],-pq.p[1],pq.p[2]));
 								var pqm = new THREE.Points(pqg,material4);
 
 								scene.add(pqm);
 				                markers.push(pqm);
 
                                 var gg2 = geomlib.buildGreaterCircle(pqg.vertices[0],pqg.vertices[1],0.01);
- 				                var gl2 = new THREE.Line(gg2, material5);
-     							scene.add(gl2);
-	    		                markers.push(gl2);
+
+								if (gg2 != null) {
+ 									var gl2 = new THREE.Line(gg2, material5);
+     								scene.add(gl2);
+	    							markers.push(gl2);
+								}
+
+                     			var cg = geomlib.buildCenterPlane(new THREE.Vector3(pq.n[0],pq.n[1],pq.n[2]),1.2);
+							    var cmesh = new THREE.Mesh(cg, material6);
+				                scene.add(cmesh);
+				                markers.push(cmesh);
+
 				            }
-							
-							scene.add(mm);
-							markers.push(mm);
 						}
 					}
 				}
@@ -243,7 +259,7 @@
             renderer.domElement.addEventListener("click",function(e) {
                 if (e[modifier]) {
 					console.log("Ctrl-Click at ",e.x,e.y);
-					selectPoint({x:e.clientX,y:e.clientY});
+					selectPoint({x:e.clientX,y:e.clientY,doubleSelect:e.shiftKey});
 				
 				    e.preventDefault();
 				    e.stopPropagation();
