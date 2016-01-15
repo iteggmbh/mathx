@@ -72,23 +72,8 @@ var ecc = {
 	}
 };
 
-// elliptic curve X^3 + a X Z^2 + b Z^3 - Z*Y^2 = 0
-ecc.EllipticCurve = function(a,b) {
-	this.a = a;
-	this.b = b;
-};
-
-ecc.EllipticCurve.prototype.distance = function(p) {
-	
-	return ecc.cube(p[0]) + this.a*p[0]*ecc.sqr(p[2]) + this.b*ecc.cube(p[2]) - p[2]*ecc.sqr(p[1]);
-};
-
-// derivation of distance, gradient.
-ecc.EllipticCurve.prototype.gradient = function(p) {
-	
-	return [3*ecc.sqr(p[0]) + this.a*ecc.sqr(p[2]),
-			-2*p[1]*p[2],
-			2*this.a*p[0]*p[2]+3*this.b*ecc.sqr(p[2])-ecc.sqr(p[1])];
+// base class
+ecc.EllipticCurve = function() {
 };
 
 // project point p onto curve with precision
@@ -112,8 +97,136 @@ ecc.EllipticCurve.prototype.project = function(p,precision) {
 	return ecc.normalize(p);
 };
 
+// make a vertices array of a branch with the given delta
+// return true, if we ran into infinity or false, if we came back over y=0
+ecc.EllipticCurve.prototype._makeBranchVertices = function(vertices,p0,delta) {
+
+	// fast clone
+	var p=p0.slice();
+	
+	var ylast = null;
+		
+	for (var i=0;i<1000;++i) {
+        
+		// normal vector to curve X^3 + a X Z^2 + b Z^3 - Z*Y^2 = 0
+		var grad = this.gradient(p); 
+		
+		// cross product
+		var dd = ecc.cross(p,grad);
+		
+ 		fac = delta / ecc.length3(dd);
+		ecc.multadd(p,fac,dd);
+		
+		if (p[2] < 0) {
+
+			if (Math.abs(p[0]) > Math.abs(p[1])) {
+				vertices.push(
+					new THREE.Vector3(Math.sign(p[0]),0,0)
+				);
+			}
+			else {	
+				vertices.push(
+					new THREE.Vector3(0,Math.sign(p[1]),0)
+				);
+			}
+			
+			return true;
+		}
+		
+		if (p[2] < 0 || (ylast != null && ylast*p[1] <= 0)) {
+			return false;
+		}
+
+		this.project(p,1.0e-8);
+
+		vertices.push(
+            new THREE.Vector3(p[0],p[1],p[2])
+		);
+		
+		ylast = p[1];
+	}
+	return true;
+};
+
+// return an array of THREE.js geometry instances comprising the curve branches
+ecc.EllipticCurve.prototype.makeGeometries = function() {
+
+	var pp=this.initialPoints();
+	var ret = [];
+	var step = 0.01;
+
+	var mergeCandidate = null;
+	
+	for (var i=0;i<pp.length;++i) {
+		
+        var geom = new THREE.Geometry();
+
+		var p = pp[i];
+		
+		ecc.normalize(p);
+
+		console.log("pp[",i,"]=",pp[i],",d=",this.distance(p),",dd=",this.gradient(p));
+
+		geom.vertices.push(
+            new THREE.Vector3(p[0],p[1],p[2])
+		);
+
+		if (this._makeBranchVertices(geom.vertices,p,step)) {
+
+			geom.vertices.reverse();
+			this._makeBranchVertices(geom.vertices,p,-step);
+			ret.push(geom);
+		}
+		else if (mergeCandidate) {
+
+			Array.prototype.push.apply(mergeCandidate.vertices,geom.vertices);
+			// visually close the loop
+			mergeCandidate.vertices.push(mergeCandidate.vertices[0]);
+			
+			ret.push(mergeCandidate);
+			mergeCandidate = null;
+		}
+		else {
+			mergeCandidate = geom;
+		}
+	}
+
+	if (mergeCandidate) {
+		console.log("Found a half-loop merge candidate with no counterpart");
+		ret.push(mergeCandidate);
+	}
+	
+	return ret;
+};
+
+//
+// elliptic weierstrass curve X^3 + a X Z^2 + b Z^3 - Z*Y^2 = 0
+//
+ecc.WeierstrassCurve = function(a,b) {
+	this.a = a;
+	this.b = b;
+};
+
+ecc.WeierstrassCurve.prototype = Object.create(ecc.EllipticCurve.prototype);
+ecc.WeierstrassCurve.prototype.constructor = ecc.WeierstrassCurve;
+
+// The curve equation, aka the distance
+ecc.WeierstrassCurve.prototype.distance = function(p) {
+	
+	return ecc.cube(p[0]) + this.a*p[0]*ecc.sqr(p[2]) + this.b*ecc.cube(p[2]) - p[2]*ecc.sqr(p[1]);
+};
+
+// derivation of distance, gradient.
+ecc.WeierstrassCurve.prototype.gradient = function(p) {
+	
+	return [3*ecc.sqr(p[0]) + this.a*ecc.sqr(p[2]),
+			-2*p[1]*p[2],
+			2*this.a*p[0]*p[2]+3*this.b*ecc.sqr(p[2])-ecc.sqr(p[1])];
+};
+
+
 // add p and q
-ecc.EllipticCurve.prototype.add = function(p,q) {
+ecc.WeierstrassCurve.prototype.add = function(p,q) {
 
 	var uvw;
 
@@ -201,98 +314,91 @@ ecc.EllipticCurve.prototype.add = function(p,q) {
 	}
 	*/
 	
-}
+};
 
-// make a vertices array of a branch with the given delta
-// return true, if we ran into infinity or false, if we came back over y=0
-ecc.EllipticCurve.prototype._makeBranchVertices = function(vertices,p0,delta) {
-
-	// fast clone
-	var p=p0.slice();
-	
-	var ylast = null;
-		
-	for (var i=0;i<1000;++i) {
-        
-		// normal vector to curve X^3 + a X Z^2 + b Z^3 - Z*Y^2 = 0
-		var grad = this.gradient(p); 
-		
-		// cross product
-		var dd = ecc.cross(p,grad);
-		
- 		fac = delta / ecc.length3(dd);
-		ecc.multadd(p,fac,dd);
-		
-		if (p[2] < 0) {
-			vertices.push(
-				new THREE.Vector3(0,Math.sign(p[1]),0)
-			);
-			
-			return true;
-		}
-		
-		if (p[2] < 0 || (ylast != null && ylast*p[1] <= 0)) {
-			return false;
-		}
-
-		this.project(p,1.0e-8);
-		
-		vertices.push(
-            new THREE.Vector3(p[0],p[1],p[2])
-		);
-		
-		ylast = p[1];
-	}
-	return true;
-}
-
-ecc.EllipticCurve.prototype.makeGeometries = function() {
-
-	var xx=ecc.cardano(this.a,this.b);
+ecc.WeierstrassCurve.prototype.initialPoints = function() {
+	var xx = ecc.cardano(this.a,this.b);
 	var ret = [];
-	var step = 0.01;
-
-	var mergeCandidate = null;
-
 	
 	for (var i=0;i<xx.length;++i) {
-		
-        var geom = new THREE.Geometry();
-
-		var p = [xx[i],0,1];
-		
-		ecc.normalize(p);
-
-		console.log("xx[",i,"]=",xx[i],",d=",this.distance(p),",dd=",this.gradient(p));
-
-		geom.vertices.push(
-            new THREE.Vector3(p[0],p[1],p[2])
-		);
-
-		if (this._makeBranchVertices(geom.vertices,p,step)) {
-
-			geom.vertices.reverse();
-			this._makeBranchVertices(geom.vertices,p,-step);
-			ret.push(geom);
-		}
-		else if (mergeCandidate) {
-
-			Array.prototype.push.apply(mergeCandidate.vertices,geom.vertices);
-			// visually close the loop
-			mergeCandidate.vertices.push(mergeCandidate.vertices[0]);
-			
-			ret.push(mergeCandidate);
-			mergeCandidate = null;
-		}
-		else {
-			mergeCandidate = geom;
-		}
+		ret.push([xx[i],0,1]);
 	}
+	return ret;
+};
 
-	if (mergeCandidate) {
-		console.log("Found a half-loop merge candidate with no counterpart");
-		ret.push(mergeCandidate);
+//
+// Edwards curve (X^2+Y^2)Z^2=Z^4+d X^2 Y^2
+//
+ecc.EdwardsCurve = function(d) {
+	this.d = d;
+};
+
+ecc.EdwardsCurve.prototype = Object.create(ecc.EllipticCurve.prototype);
+ecc.EdwardsCurve.prototype.constructor = ecc.EdwardsCurve;
+
+// The curve equation, aka the distance
+ecc.EdwardsCurve.prototype.distance = function(p) {
+	
+	return (ecc.sqr(p[0])+ecc.sqr(p[1]))*ecc.sqr(p[2]) - ecc.sqr(ecc.sqr(p[2]))-this.d*ecc.sqr(p[0])*ecc.sqr(p[1]);
+};
+
+// derivation of distance, gradient.
+ecc.EdwardsCurve.prototype.gradient = function(p) {
+	
+	return [
+		2*p[0]*ecc.sqr(p[2]) - this.d*2*p[0]*ecc.sqr(p[1]),
+		2*p[1]*ecc.sqr(p[2]) - this.d*ecc.sqr(p[0])*2*p[1],
+		2*(ecc.sqr(p[0])+ecc.sqr(p[1]))*p[2] - 4 * ecc.cube(p[2])
+	];
+};
+
+
+// add p and q
+ecc.EdwardsCurve.prototype.add = function(p,q) {
+
+	var ret;
+
+	if (p[0] == q[0] && p[1] == q[1] && p[2] == q[2]) {
+		// square operation
+		var B =  ecc.sqr(p[0]+p[1]);
+		var C = ecc.sqr(p[0]);
+		var D =  ecc.sqr(p[1]);
+		var E = C+D;
+		var H = ecc.sqr(p[2]);
+		var J = E-2*H;
+		ret = [(B-E)*J,E*(C-D),E*J];
+	}
+	else {
+		var A = p[0]*q[2];
+		var B = p[1]*q[2];
+		var C = p[2]*q[0];
+		var D = p[2]*q[1];
+		var E = A*B;
+		var F = C*D;
+		var G = E+F;
+		var H = E-F;
+		var J = (A-C)*(B+D)-H;
+		var K = (A+D)*(B+C)-G;
+		ret = [G*J,H*K,J*K];
 	}
 	
+	ecc.normalize(ret);
+	if (ret[2]<0) {
+		ret[0] = -ret[0];
+		ret[1] = -ret[1];
+		ret[2] = -ret[2];
+	}
+	
+	return {p:ret};
+};
+
+ecc.EdwardsCurve.prototype.initialPoints = function() {
+	var ret = [[-1,0,1],[1,0,1]];
+
+	if (this.d >= 1) {
+		ret.push([0,-1,1]);
+		ret.push([0,1,1]);
+	}
+
 	return ret;
 };
