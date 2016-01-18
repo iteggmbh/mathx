@@ -1,12 +1,16 @@
 body {
 	margin: 0px;
+	padding: 5px;
 	font-family: sans-serif,arial;
 	font-size: 13px;
 }
 
 canvas {
-	width: 100%;
-	height: 100%;
+	position: absolute;
+	left: 0px;
+	right: 0px;
+	top: 0px;
+	bottom: 0px;
 }
 
 .mathInvisible {
@@ -30,6 +34,7 @@ canvas {
 	vertical-align: middle;
 	text-align: right;
 	color: white;
+	z-index: 1;
 }
 
 .mathTopRight {
@@ -47,6 +52,7 @@ canvas {
 
 .mathHelpButton {
 	background-position: 0px -24px;
+	z-index: 1;
 }
 
 .mathHelpButton.ariaDisabled {
