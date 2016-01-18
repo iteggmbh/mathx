@@ -69,6 +69,25 @@ var ecc = {
 					-f*Math.cos(alpha-ecc.M_THIRD*Math.PI)
 				   ].sort();
 		}
+	},
+
+	addTermToHtml: function(s,fac,term) {
+
+		if (fac == 0) {
+			return s;
+		}
+		else if (fac == -1) {
+			return s + " - " + term;
+		}
+		else if (fac == 1) {
+			return s + " + " + term;
+		}
+		else if (fac < 0) {
+			return s + " - " + (-fac) + "&middot;" + term;
+		}
+		else {
+			return s + " + " + fac + "&middot;" + term;
+		}
 	}
 };
 
@@ -210,6 +229,14 @@ ecc.WeierstrassCurve = function(a,b) {
 ecc.WeierstrassCurve.prototype = Object.create(ecc.EllipticCurve.prototype);
 ecc.WeierstrassCurve.prototype.constructor = ecc.WeierstrassCurve;
 
+ecc.WeierstrassCurve.prototype.toHtml = function() {
+	var ret = "Weierstrass Curve Z&middot;Y<sup>2</sup> = X<sup>3</sup>";
+
+	ret = ecc.addTermToHtml(ret,this.a,"X&middot;Z<sup>2</sup>");
+	ret = ecc.addTermToHtml(ret,this.b,"Z<sup>3</sup>");
+	return ret;
+};
+
 // The curve equation, aka the distance
 ecc.WeierstrassCurve.prototype.distance = function(p) {
 	
@@ -335,6 +362,13 @@ ecc.EdwardsCurve = function(d) {
 
 ecc.EdwardsCurve.prototype = Object.create(ecc.EllipticCurve.prototype);
 ecc.EdwardsCurve.prototype.constructor = ecc.EdwardsCurve;
+
+ecc.EdwardsCurve.prototype.toHtml = function() {
+	var ret = "Edwards Curve (X<sup>2</sup> + Y<sup>2</sup>)&middot;Z<sup>2</sup> = Z<sup>4</sup>";
+
+	ret = ecc.addTermToHtml(ret,this.d,"X<sup>2</sup>&middot;Y<sup>2</sup>");
+	return ret;
+};
 
 // The curve equation, aka the distance
 ecc.EdwardsCurve.prototype.distance = function(p) {

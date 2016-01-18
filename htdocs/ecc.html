@@ -1,9 +1,8 @@
 <html>
 	<head>
 		<title>Elliptic Curve Cryptography Visualization</title>
+        <link rel="stylesheet" href="css/math.css" media="screen">
 		<style>
-			body { margin: 0; }
-			canvas { width: 100%; height: 100% }
 		</style>
 	</head>
 	<body>
@@ -12,7 +11,49 @@
 		<script src="js/ecc.js"></script>
 		<script src="js/geomlib.js"></script>
 		<script src="js/helpers.js"></script>
-		<script>
+		<script src="js/widgets.js"></script>
+     	<script>
+
+        document.addEventListener("DOMContentLoaded",function() {
+
+            var helpButton = new widgets.Button({domNode:"helpButton"});
+            var helpCloseButton = new widgets.Button({domNode:"helpCloseButton"});
+            var subTitle = document.getElementById("subTitle");
+            var helpOver = document.getElementById("helpOver");
+            var helpOverInner = document.getElementById("helpOverInner");
+
+			var helpLoaded = false;
+			
+			widgets.addAriaClickHandler(helpButton,function(){
+				helpOver.classList.remove("mathInvisible");
+				helpButton.disabled = true;
+				if (!helpLoaded) {
+					var url = "templates/ecc-help.html";
+					helpers.xhr({url:url,responseType:"document"}).then(
+						function(res) {
+							if (res && res.body && res.body.hasChildNodes()) {
+								while (helpOverInner.lastChild) {
+									helpOverInner.removeChild(helpOverInner.lastChild);
+								}
+								var children = res.body.childNodes;
+								for (var i = 0; i < children.length; i++) {
+									helpOverInner.appendChild(children[i]);
+								}
+							}
+						},
+						function(err) {
+							console.log(err);
+							helpOverInner.innerHTML = "Loading of ["+url+"] failed.";
+						}
+					);
+				}
+			});
+
+			widgets.addAriaClickHandler(helpCloseButton,function(){
+				helpOver.classList.add("mathInvisible");
+				helpButton.disabled = false;
+			});
+			
 		    var clock = new THREE.Clock();
 			var scene = new THREE.Scene();
 			var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 50 );
@@ -136,6 +177,7 @@
 					console.log("Drawing Edwards curve with d=",d);				   
 					ec = new ecc.EdwardsCurve(d);
 				}
+				subTitle.innerHTML = ec.toHtml();
 				
 			    var lgeoms = ec.makeGeometries();
 								   
@@ -318,6 +360,14 @@
 					touchPos = null;
 				}
 			},false);
-		</script>
+		},false);
+        </script>
+	    <div id="subTitle" class="mathSubTitle"></div>
+	    <div id="helpButton" class="mathHelpButton mathButton mathBottomRight"></div>
+	    <div id="helpOver" class="mathHelpOver mathInvisible">
+	      <div class="mathOverTitle">Information</div>
+	      <div id="helpCloseButton" class="mathCloseButton mathButton mathTopRight"></div>
+	      <div id="helpOverInner" class="mathOverInner">loading...</div>
+	    </div>
 	</body>
 </html>

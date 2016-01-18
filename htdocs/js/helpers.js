@@ -44,7 +44,11 @@ var helpers = {
 			if (xmlhttp.readyState==4) {
 
 				if (xmlhttp.status==200) {
-					if (!xmlhttp.responseType && args.responseType == 'json' && typeof xmlhttp.response == 'string') {
+
+					if (xmlhttp.response == null) {
+						d.reject("HTTP query ["+method+" "+url+"] returned empty response.");
+					}
+					else if (!xmlhttp.responseType && args.responseType == 'json' && typeof xmlhttp.response == 'string') {
 						d.resolve(JSON.parse(xmlhttp.response));
 					}
 					else {
@@ -89,7 +93,7 @@ helpers.Deferred.prototype.resolve = function() {
 
 helpers.Deferred.prototype.reject = function() {
 
-	for (var i=0;i<this.successHandlers.length;++i) {
+	for (var i=0;i<this.failHandlers.length;++i) {
 		this.failHandlers[i].apply(this,arguments);
 	}
 }

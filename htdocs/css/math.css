@@ -1,0 +1,112 @@
+body {
+	margin: 0px;
+	font-family: sans-serif,arial;
+	font-size: 13px;
+}
+
+canvas {
+	width: 100%;
+	height: 100%;
+}
+
+.mathInvisible {
+	display: none;
+}
+
+.mathBottomRight {
+	position: absolute;
+	right: 5px;
+	bottom: 5px;
+}
+
+.mathSubTitle {
+	position: absolute;
+	left: 0px;
+	right: 0px;
+	bottom: 0px;
+	padding-left: 5px;
+	padding-right: 34px;
+	line-height: 34px;
+	vertical-align: middle;
+	text-align: right;
+	color: white;
+}
+
+.mathTopRight {
+	position: absolute;
+	right: 5px;
+	top: 5px;
+}
+
+.mathButton {
+	background-image: url('../images/math-icons.png');
+	width: 24px;
+	height: 24px;
+	padding: 0px;
+}
+
+.mathHelpButton {
+	background-position: 0px -24px;
+}
+
+.mathHelpButton.ariaDisabled {
+	background-position: 0px 0px !important;
+}
+
+.mathHelpButton:hover {
+	background-position: 0px -48px;
+}
+
+.mathHelpButton:active {
+	background-position: 0px -72px;
+}
+
+.mathCloseButton {
+	background-position: 24px -24px;
+}
+
+.mathCloseButton.ariaDisabled {
+	background-position: 24px 0px !important;
+}
+
+.mathCloseButton:hover {
+	background-position: 24px -48px;
+}
+
+.mathCloseButton:active {
+	background-position: 24px -72px;
+}
+
+.mathHelpOver {
+	position: absolute;
+	left: 10%;
+	right: 10%;
+	top: 10%;
+	bottom: 10%;
+	border: 1px solid white;
+	background: rgba(0,0,0,0.7);
+	z-index: 100;
+}
+
+.mathOverTitle {
+	position: absolute;
+	left: 0px;
+	right: 0px;
+	top: 0px;
+	padding-left: 5px;
+	padding-right: 34px;
+	line-height: 34px;
+	vertical-align: middle;
+	color: white;
+}
+.mathOverInner {
+	position: absolute;
+	background: rgba(255,255,255,0.7);
+	color: black;
+	left: 0px;
+	right: 0px;
+	top: 34px;
+	bottom: 0px;
+	overflow: auto;
+	padding: 5px;
+}
