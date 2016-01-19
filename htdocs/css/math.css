@@ -3,6 +3,10 @@ body {
 	padding: 5px;
 	font-family: sans-serif,arial;
 	font-size: 13px;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
 }
 
 canvas {
