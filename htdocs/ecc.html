@@ -328,42 +328,19 @@
 				}
 			},false);
 
-            // trigger point selection on long, in-place touch (> 500ms, don't move more than 10 pixels)
-            var touchPos = null;
-				
-            renderer.domElement.addEventListener("touchstart",function(event){
-				if (event.touches.length == 1 && !event[modifier]) {
-					var touch = event.touches[0];
-					touchPos = { t: new Date(), x:touch.clientX,y:touch.clientY};
-					console.log("Touch start at ",touchPos);
-				}
-			},false);
-			renderer.domElement.addEventListener("touchmove",function(event){
-				if (event.touches.length == 1 && touchPos) {
-					var touch = event.touches[0];
+		    if (widgets.isTouchDevice()) {
 
-					if (ecc.hypot(touchPos.x-touch.clientX,touchPos.y-touch.clientY) > 10) {
-					    touchPos = null;
-				    }
-				}
-				else {
-					touchPos = null;
-				}
-			},false);
-			renderer.domElement.addEventListener("touchend",function(event){
-				if (touchPos && event.touches.length == 0) {
-
-					var d = new Date();
-					
-					if (d.getTime() - touchPos.t.getTime() > 500) {
-
-						touchPos.doubleSelect = d.getTime() - touchPos.t.getTime() > 1000;
-						console.log("Touch end at ",touchPos);
-						selectPoint(touchPos);
-					}
-					touchPos = null;
-				}
-			},false);
+			    widgets.addTouchClickHandler(renderer.domElement,function(event) {
+			        if (event.duration > 500) {
+                        var p = {x: event.clientX,
+			                     y: event.clientY,
+			                     doubleSelect: event.duration > 1000};
+			    
+			            selectPoint(p);
+			        }
+    		    });
+			}
+			  
 		},false);
         </script>
 	    <div id="subTitle" class="mathSubTitle"></div>

@@ -67,7 +67,7 @@ canvas {
 	background-position: 0px -48px;
 }
 
-.mathHelpButton:active {
+.mathHelpButton.ariaActive {
 	background-position: 0px -72px;
 }
 
@@ -83,7 +83,7 @@ canvas {
 	background-position: 24px -48px;
 }
 
-.mathCloseButton:active {
+.mathCloseButton.ariaActive {
 	background-position: 24px -72px;
 }
 
