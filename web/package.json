@@ -1,0 +1,16 @@
+{
+  "name": "math",
+  "version": "1-SNAPSHOT",
+  "license": "creative commons BY-NC",
+  "scripts": {
+    "dev": "vite --port 5173",
+    "build": "vite build",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "three": "^0.161.0"
+  },
+  "devDependencies": {
+    "vite": "^5.1.3"
+  }
+}
