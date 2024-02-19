@@ -130,9 +130,33 @@ ecc.EllipticCurve.prototype.project = function(p,precision) {
 	return ecc.normalize(p);
 };
 
+ecc.EllipticCurve.prototype._addVertice = function(vertices,p,affineBdry) {
+    if (affineBdry) {
+
+	    if (p[2] < 0.001) {
+            return false;
+        }
+
+      var x = p[0] / p[2];
+      var y = p[1] / p[2];
+
+      vertices.push(
+        new THREE.Vector3(x,y,1)
+      );
+      
+      return Math.abs(x) < affineBdry && Math.abs(y) < affineBdry;
+    }
+    else {
+        vertices.push(
+            new THREE.Vector3(p[0],p[1],p[2])
+        );
+    }
+    return true;
+}
+
 // make a vertices array of a branch with the given delta
 // return true, if we ran into infinity or false, if we came back over y=0
-ecc.EllipticCurve.prototype._makeBranchVertices = function(vertices,p0,delta) {
+ecc.EllipticCurve.prototype._makeBranchVertices = function(vertices,p0,delta,affineBdry) {
 
 	// fast clone
 	var p=p0.slice();
@@ -152,17 +176,19 @@ ecc.EllipticCurve.prototype._makeBranchVertices = function(vertices,p0,delta) {
 		
 		if (p[2] < 0) {
 
-			if (Math.abs(p[0]) > Math.abs(p[1])) {
-				vertices.push(
-					new THREE.Vector3(Math.sign(p[0]),0,0)
-				);
-			}
-			else {	
-				vertices.push(
-					new THREE.Vector3(0,Math.sign(p[1]),0)
-				);
-			}
-			
+            // singularity reached
+            if (affineBdry == null) {
+				if (Math.abs(p[0]) > Math.abs(p[1])) {
+				 	vertices.push(
+						new THREE.Vector3(Math.sign(p[0]),0,0)
+					);
+				}
+				else {	
+					vertices.push(
+						new THREE.Vector3(0,Math.sign(p[1]),0)
+					);
+				}
+		    }
 			return true;
 		}
 		
@@ -172,9 +198,9 @@ ecc.EllipticCurve.prototype._makeBranchVertices = function(vertices,p0,delta) {
 
 		this.project(p,1.0e-8);
 
-		vertices.push(
-            new THREE.Vector3(p[0],p[1],p[2])
-		);
+        if (!this._addVertice(vertices,p,affineBdry)) {
+            return true;
+        }
 		
 		ylast = p[1];
 	}
@@ -182,7 +208,7 @@ ecc.EllipticCurve.prototype._makeBranchVertices = function(vertices,p0,delta) {
 };
 
 // return an array of THREE.js geometry instances comprising the curve branches
-ecc.EllipticCurve.prototype.makeGeometries = function() {
+ecc.EllipticCurve.prototype.makeGeometries = function(affineBdry) {
 
 	var pp=this.initialPoints();
 	var ret = [];
@@ -200,14 +226,14 @@ ecc.EllipticCurve.prototype.makeGeometries = function() {
 
 		console.log("pp[",i,"]=",pp[i],",d=",this.distance(p),",dd=",this.gradient(p));
 
-		geom.vertices.push(
-            new THREE.Vector3(p[0],p[1],p[2])
-		);
+        if (!this._addVertice(geom.vertices,p,affineBdry)) {
+            continue;
+        }
 
-		if (this._makeBranchVertices(geom.vertices,p,step)) {
+	  if (this._makeBranchVertices(geom.vertices,p,step,affineBdry)) {
 
 			geom.vertices.reverse();
-			this._makeBranchVertices(geom.vertices,p,-step);
+		this._makeBranchVertices(geom.vertices,p,-step,affineBdry);
 			ret.push(geom);
 		}
 		else if (mergeCandidate) {
