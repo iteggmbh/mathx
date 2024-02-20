@@ -239,7 +239,7 @@ export class EllipticCurve {
 
         Array.prototype.push.apply(mergeCandidate,vertices);
         // visually close the loop
-        mergeCandidate.vertices.push(mergeCandidate[0]);
+        mergeCandidate.push(mergeCandidate[0]);
 
         ret.push(new THREE.BufferGeometry().setFromPoints(mergeCandidate));
         mergeCandidate = null;

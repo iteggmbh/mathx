@@ -21,23 +21,15 @@ widgets.addAriaClickHandler(helpButton,function(){
   helpButton.disabled = true;
   if (!helpLoaded) {
 	var url = "templates/ecc-help.html";
-	helpers.xhr({url:url,responseType:"document"}).then(
-	  function(res) {
-		if (res && res.body && res.body.hasChildNodes()) {
-		  while (helpOverInner.lastChild) {
-			helpOverInner.removeChild(helpOverInner.lastChild);
-		  }
-		  var children = res.body.childNodes;
-		  for (var i = 0; i < children.length; i++) {
-			helpOverInner.appendChild(children[i]);
-		  }
-		}
-	  },
+	fetch(url).
+      then(resp => resp.text()).
+	  then(res => helpOverInner.innerHTML = res).
+      catch(
 	  function(err) {
 		console.log(err);
 		helpOverInner.innerHTML = "Loading of ["+url+"] failed.";
 	  }
-	);
+	  );
   }
 });
 
