@@ -10,7 +10,7 @@ import logging
 import math
 from mathx import formula
 
-log = logging.getLogger("mathx.evaluate")
+log = logging.getLogger(__name__)
 
 NUMBER_TYPES = (int,float)
 
@@ -25,7 +25,7 @@ class valuesiter(list):
         self.ymax = state["ymax"]
         self.n = state["n"]
         self.n1 = self.n-1
-        
+
         self.ast = formula.Parser(self.f).parseAst()
         self.vvars = list(self.ast.findVars({}))
         log.debug("vvars=%s"%self.vvars)
@@ -35,7 +35,7 @@ class valuesiter(list):
         self._x = self.xmin
 
     def __next__(self):
-        
+
         if self._i>=self.n:
             raise StopIteration()
 
@@ -64,14 +64,10 @@ class valuesiter(list):
     def __len__(self):
         return 1
 
-def handler(env, start_response):
-    
-    inp = env['wsgi.input']
-    reader = codecs.getreader("utf-8")
-    state = json.load(reader(inp))
-    
+def handler(state):
+
     ret = {}
-    
+
     for key,vtype in STATE_KEYS.items():
         value = state[key]
         assert isinstance(value, vtype)
@@ -85,8 +81,7 @@ def handler(env, start_response):
     values = valuesiter(ret)
 
     ret["values"] = values
-    
-    start_response('200 OK', [('Content-Type','application/json')])
+
     je = json.JSONEncoder()
     viter = je.iterencode(ret)
     return codecs.iterencode(viter,"utf-8")

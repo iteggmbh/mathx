@@ -25,11 +25,11 @@ widgets.addAriaClickHandler(helpButton,function(){
       then(resp => resp.text()).
 	  then(res => helpOverInner.innerHTML = res).
       catch(
-	  function(err) {
-		console.log(err);
-		helpOverInner.innerHTML = "Loading of ["+url+"] failed.";
-	  }
-	  );
+        function(err) {
+          console.log(err);
+          helpOverInner.innerHTML = "Loading of ["+url+"] failed.";
+        }
+      );
   }
 });
 
@@ -49,13 +49,13 @@ renderer.setPixelRatio( window.devicePixelRatio );
 document.body.appendChild( renderer.domElement );
 
 var material = new THREE.MeshLambertMaterial( { color: 0x00ffff, emissive: 0x00fffff,
-			                                    side: THREE.FrontSide, depthTest: true, depthWrite: true, wireframe: false,
-			                                    transparent: true, opacity: 0.7} );
+                                                side: THREE.FrontSide, depthTest: true, depthWrite: true, wireframe: false,
+                                                transparent: true, opacity: 0.7} );
 material.color.convertSRGBToLinear();
 
 var material2 = new THREE.MeshLambertMaterial( { color: 0x00ffff, emissive: 0x00fffff,
-			                                     side: THREE.BackSide, depthTest: true, depthWrite: true, wireframe: false,
-			                                     transparent: true, opacity: 0.7} );
+                                                 side: THREE.BackSide, depthTest: true, depthWrite: true, wireframe: false,
+                                                 transparent: true, opacity: 0.7} );
 material2.color.convertSRGBToLinear();
 
 // line material.

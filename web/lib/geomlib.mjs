@@ -15,29 +15,29 @@ export function buildSemiSphere(radius) {
 	vertices.push(Math.sin(alpha)*r);
 	vertices.push(z);
 	indices.push(0);
-	indices.push(1+i);
-	indices.push(1+(i+1)%5);
+    indices.push(1+i);
+    indices.push(1+(i+1)%5);
   }
 
   for (var i=0;i<10;++i) {
-	var alpha = Math.PI * 0.2 * i;
+    var alpha = Math.PI * 0.2 * i;
 
-	vertices.push(Math.cos(alpha)*radius);
-	vertices.push(Math.sin(alpha)*radius);
-	vertices.push(0.0);
-	if (i & 1) {
-	  indices.push(6+i);
-	  indices.push(1+((i+1)%10)/2);
-	  indices.push(1+(i-1)/2);
-	}
-	else {
-	  indices.push(1+i/2);
-	  indices.push(6+i);
-	  indices.push(6+(i+1)%10);
-	  indices.push(1+i/2);
-	  indices.push(6+(i+9)%10);
-	  indices.push(6+i%10);
-	}
+    vertices.push(Math.cos(alpha)*radius);
+    vertices.push(Math.sin(alpha)*radius);
+    vertices.push(0.0);
+    if (i & 1) {
+      indices.push(6+i);
+      indices.push(1+((i+1)%10)/2);
+      indices.push(1+(i-1)/2);
+    }
+    else {
+      indices.push(1+i/2);
+      indices.push(6+i);
+      indices.push(6+(i+1)%10);
+      indices.push(1+i/2);
+      indices.push(6+(i+9)%10);
+      indices.push(6+i%10);
+    }
   }
 
   return new THREE.PolyhedronGeometry( vertices, indices, radius, 4);
@@ -57,7 +57,7 @@ export function buildAxis(src, dst, colorHex, dashed ) {
   vertices.push( dst.clone() );
 
   var geom = new THREE.BufferGeometry().setFromPoints(vertices);
-  var axis = new THREE.Line( geom, mat, THREE.LinePieces );
+  var axis = new THREE.LineSegments(geom,mat);
 
   return axis;
 };
