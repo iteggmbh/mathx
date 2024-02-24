@@ -46,7 +46,7 @@ async def evaluate_handler(request):
 
     buf = bytearray(buffersize)
     nbuf = 0
-    
+
     for x in iter:
         n = len(x)
         if nbuf + n <= buffersize:
@@ -61,15 +61,23 @@ async def evaluate_handler(request):
 
     if nbuf > 0:
         await response.write(buf[0:nbuf])
-            
+
     await response.write_eof()
     return response
+
+async def index(request):
+    raise web.HTTPFound('/index.html')
 
 def main():
     log.info(f"Setting up aiohttp application.")
 
     app = web.Application()
     app.add_routes(routes)
+
+    webroot = os.getenv("HTTP_WEBROOT")
+    if webroot:
+        app.router.add_route("GET","/",index)
+        app.router.add_static('/',webroot)
 
     log.info(f"Listening on {listenaddr}:{listenport} with buffer size [{buffersize}]")
     web.run_app(app,host=listenaddr,port=listenport)

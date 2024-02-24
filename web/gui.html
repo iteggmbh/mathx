@@ -1,0 +1,34 @@
+<html>
+  <head>
+	<title>Three.js Formula Visualization GUI</title>
+	<style>
+	  body { margin: 0; font-family: sans-serif,arial; }
+	  #iframeHolder { border: 0px; position: absolute; top: 0px; left: 0px; right: 0px; bottom: 0px; }
+	  #guiHolder { border: 2px #cccccc solid; border-radius: 5px; padding: 5px 5px 0px 5px; position: absolute; top: 0px; left: 0px; right: 0px; height: 66px; z-index:100; }
+	  #guiHolder td { color:#ffffff;  font-size: 13px;}
+	  iframe { border:0px; background-color: #000000; }
+	  input { background-color: rgba(0,0,0,0.5); color:#ffffff; border: 1px #888888 solid;}
+	  input.invalid { background-color: rgba(255,0,0,0.7); }
+	</style>
+  </head>
+  <body>
+    <script type="module" src="./gui-main.mjs"></script>
+	<div id="guiHolder">
+	  <table>
+		<tr>
+		  <td>f(x,y)</td><td colspan="9"><input id="inputF" type="text" size="80"></td>
+		</tr><tr>
+		  <td>xmin</td><td><input id="inputXmin" type="text" size="7"></td>
+		  <td>xmax</td><td><input id="inputXmax" type="text" size="7"></td>
+		  <td>ymin</td><td><input id="inputYmin" type="text" size="7"></td>
+		  <td>ymax</td><td><input id="inputYmax" type="text" size="7"></td>
+		  <td align="right">&nbsp;&nbsp;&nbsp;n</td><td align="right"><input id="inputN" type="text" size="7"></td>
+		</tr>
+		<td>URL</td><td colspan="9"><input id="outputUrl" type="text" size="80" readonly="readonly"></td>
+	  </table>
+	</div>
+	<div id="iframeHolder">
+      <iframe src="about:blank"></iframe>
+	</div>
+  </body>
+</html>
