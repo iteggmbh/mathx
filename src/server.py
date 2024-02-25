@@ -1,5 +1,6 @@
 import logging
 import os
+from urllib.parse import urlparse
 
 if os.environ.get("MATHX_MODE") == "development":
     level = logging.DEBUG
@@ -29,6 +30,7 @@ routes = web.RouteTableDef()
 buffersize = max(256,int(os.getenv('HTTP_BUFSIZE','1448')))
 listenport = int(os.getenv('HTTP_PORT','8011'))
 listenaddr = os.getenv('HTTP_ADDRESS','0.0.0.0')
+webroot = os.getenv("HTTP_WEBROOT")
 
 @routes.post('/mathx/evaluate')
 async def evaluate_handler(request):
@@ -65,18 +67,26 @@ async def evaluate_handler(request):
     await response.write_eof()
     return response
 
-async def index(request):
-    raise web.HTTPFound('/index.html')
+@web.middleware
+async def index_rewrite(request,handler):
+
+    if request.path == '/':
+        return web.FileResponse(os.path.join(webroot,"index.html"))
+    else:
+        return await handler(request)
 
 def main():
     log.info(f"Setting up aiohttp application.")
 
-    app = web.Application()
+
+    middlewares = []
+    if webroot:
+        middlewares.append(index_rewrite)
+
+    app = web.Application(middlewares=middlewares)
     app.add_routes(routes)
 
-    webroot = os.getenv("HTTP_WEBROOT")
     if webroot:
-        app.router.add_route("GET","/",index)
         app.router.add_static('/',webroot)
 
     log.info(f"Listening on {listenaddr}:{listenport} with buffer size [{buffersize}]")
