@@ -1,7 +1,7 @@
 {
   "name": "math",
   "version": "1-SNAPSHOT",
-  "license": "creative commons BY-NC",
+  "license": "APL-2.0",
   "scripts": {
     "dev": "vite --port 5173",
     "build": "vite build",
