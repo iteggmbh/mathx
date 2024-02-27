@@ -1,0 +1,8 @@
+# exclude all as garbage ...
+*
+
+# except those that we need
+!Dockefile
+!src
+!web/dist
+

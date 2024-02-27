@@ -1,0 +1,36 @@
+include:
+  - project: 'pba/gitlab/ci-snippets'
+    ref: main
+    file: '/docker/docker-job.yml'
+
+stages:
+  - npm
+  - docker
+
+npm-job:
+  stage: npm
+  image: $CI_REGISTRY/xpkg/docker-mirroring/node:20
+  script:
+  # if we want to do more here, for every build, refactor all steps into some script npm_ci_build.sh or so
+  - cd web
+  - rm -rf dist
+  - npm ci
+  - npm run build 
+  # evtl. move dist/ somewhere else, but if you do adapt the artifacts path below too!
+  - cd ..
+  artifacts:
+    paths:
+    - "web/dist/*"
+    - "web/dist/assets/*"
+  rules:
+    # we always want the npm-job:
+    - when: on_success
+
+docker-job:
+  rules:
+    #- if: $CI_COMMIT_TAG
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    # protected branches like default branch:
+    - if: "$CI_COMMIT_REF_PROTECTED == 'true'"
+    - if: "$CI_COMMIT_REF_PROTECTED == 'true'"
+

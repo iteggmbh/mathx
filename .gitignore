@@ -60,3 +60,7 @@ target/
 
 # npm
 node_modules/
+
+# temp files from vi
+*.swp
+
