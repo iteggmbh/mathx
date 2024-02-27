@@ -3,9 +3,15 @@ Mathematical Tools for Python3
 
 This library comes with a python3 formula AST parser and formula visualization tools written in Python/GTK3 andthree.js/WebGL
 
-## Running as docker image
+## Public docker image
 
-Run the schell script
+See https://hub.docker.com/repository/docker/clazzesorg/mathx/general
+
+Built in a node:20 container by ITEG's internal CI chain.
+
+## Running as docker container locally 
+
+Run the shell script
 
 ```
 ./dev-build-run.sh
